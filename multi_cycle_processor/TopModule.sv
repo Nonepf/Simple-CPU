@@ -47,7 +47,7 @@ module TopModule (
 
 
     // ----------- Memory Zone ------------
-    Memory IDMemory ( // Instr-Data Memory
+    Memory #(.INIT_FILE("imem.txt")) IDMemory ( // Instr-Data Memory
         .a(adr),
         .wd(write_data),
         
