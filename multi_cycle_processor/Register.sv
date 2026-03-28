@@ -3,16 +3,16 @@ module Register (
     input logic en, clk, reset,
     output logic[31:0] out
 );
-    logic [31:0] reg; 
+    logic [31:0] register; 
     always_ff @(posedge clk) begin
         if (reset) begin
-            reg <= 32'b0;
+            register <= 32'b0;
         end else if (en) begin
-            reg <= in;
+            register <= in;
         end else begin
-            reg <= reg;
+            register <= register;
         end
     end
-    assign out = reg;
+    assign out = register;
 
 endmodule

@@ -7,7 +7,7 @@ module Memory #(
     input logic         clk, we, reset,
     output logic [31:0] rd
 );
-    logic [31:0] memory [31:0];
+    logic [31:0] memory [127:0];
     always_comb begin
         rd = memory[a[31:2]];
     end
