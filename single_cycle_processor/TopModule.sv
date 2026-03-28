@@ -47,7 +47,7 @@ module TopModule (
 /* Register
  *
  */
-    Memory #(.INIT_FILE("imem.txt")) instruction_memory (
+    Memory #(.INIT_FILE("instr_mem.txt")) instruction_memory (
         .a      (pc),
         .wd     (32'b0),
         .we     (1'b0),
@@ -106,12 +106,12 @@ module TopModule (
         .out    (alu_result)
     );
 
-    Memory #(.INIT_FILE("")) data_memory (
+    Memory #(.INIT_FILE("data_mem.txt")) data_memory (
         .a      (alu_result),
         .wd     (src_b_pre), // the same as "write_data"
 
         .clk    (clk),
-        .reset  (reset),
+        .reset  (1'b0),
         .we     (mem_write),
 
         .rd     (read_data)
