@@ -213,18 +213,18 @@ endmodule
 
 // ------------------ Fetch Stage --------------------
 module Fetch (
-    input logic [31:0] pc_target;
+    input logic [31:0]  pc_target,
 
-    input logic pc_src;
+    input logic         pc_src,
 
-    input logic clk;
-    input logic reset;
+    input logic         clk,
+    input logic         reset,
 
-    output logic [31:0] pc_out;
-    output logic [31:0] pc_plus4_out;
-    output logic [31:0] instr_out;
+    output logic [31:0] pc_out,
+    output logic [31:0] pc_plus4_out,
+    output logic [31:0] instr_out
 );
-    output logic [31:0] pc_next;
+    logic [31:0] pc_next;
     Mux2To1 PCSelect (
         .a      (pc_plus4_out),
         .b      (pc_target),
@@ -265,30 +265,30 @@ endmodule
 
 // ----------------- Decode Stage --------------------
 module Decode (
-    input logic [31:0]  instr_in;
-    input logic [31:0]  pc_in;
-    input logic [31:0]  pc_plus4_in;
+    input logic [31:0]  instr_in,
+    input logic [31:0]  pc_in,
+    input logic [31:0]  pc_plus4_in,
 
-    input logic [31:0]  result_in;
-    input logic         reg_write_in;
-    input logic [4:0]   rd_in;
+    input logic [31:0]  result_in,
+    input logic         reg_write_in,
+    input logic [4:0]   rd_in,
     
-    input logic         clk;
-    input logic         reset;
+    input logic         clk,
+    input logic         reset,
 
-    output logic [31:0] rd1_out, rd2_out;
-    output logic [31:0] pc_out;
-    output logic [4:0]  rd_out;
-    output logic [31:0] imm_ext_out;
-    output logic [31:0] pc_plus4_out;
+    output logic [31:0] rd1_out, rd2_out,
+    output logic [31:0] pc_out,
+    output logic [4:0]  rd_out,
+    output logic [31:0] imm_ext_out,
+    output logic [31:0] pc_plus4_out,
 
-    output logic        reg_write_out; 
-    output logic [1:0]  result_src_out; 
-    output logic        mem_write_out; 
-    output logic        jump_out; 
-    output logic        branch_out;
-    output logic [2:0]  alu_control_out;
-    output logic        alu_src_out; 
+    output logic        reg_write_out,
+    output logic [1:0]  result_src_out, 
+    output logic        mem_write_out,
+    output logic        jump_out,
+    output logic        branch_out,
+    output logic [2:0]  alu_control_out,
+    output logic        alu_src_out
 );
     logic [1:0] imm_src;
 
@@ -333,9 +333,6 @@ module ControlUnit (
         .op         (instr_in[6:0]),
         .funct3     (instr_in[14:12]),
         .funct7     (instr_in[30]),
-        .zero       (1'b0), // we don't need this bit now
-
-        .pc_src     (), // we need to delete it later 
 
         .reg_write  (reg_write_out),
         .result_src (result_src_out),
@@ -355,34 +352,34 @@ endmodule
 
 // ----------------- Execute Stage -------------------
 module Encode (
-    input logic [31:0]  rd1_in, rd2_in;
-    input logic [31:0]  pc_in;
-    input logic [31:0]  rd_in;
-    input logic [31:0]  imm_ext_in;
-    input logic [31:0]  pc_plus4_in;
+    input logic [31:0]  rd1_in, rd2_in,
+    input logic [31:0]  pc_in,
+    input logic [31:0]  rd_in,
+    input logic [31:0]  imm_ext_in,
+    input logic [31:0]  pc_plus4_in,
 
-    output logic        reg_write_in; 
-    output logic [1:0]  result_src_in; 
-    output logic        mem_write_in; 
-    output logic        jump_in; 
-    output logic        branch_in;
-    output logic [2:0]  alu_control_in;
-    output logic        alu_src_in; 
+    output logic        reg_write_in,
+    output logic [1:0]  result_src_in, 
+    output logic        mem_write_in,
+    output logic        jump_in,
+    output logic        branch_in,
+    output logic [2:0]  alu_control_in,
+    output logic        alu_src_in,
 
-    input logic         clk;
-    input logic         reset;
+    input logic         clk,
+    input logic         reset,
 
-    output logic [31:0] pc_src_out;
-    output logic [31:0] pc_target_out;
+    output logic [31:0] pc_src_out,
+    output logic [31:0] pc_target_out,
 
-    output logic        reg_write_out;
-    output logic [1:0]  result_src_out;
-    output logic        mem_write_out;
+    output logic        reg_write_out,
+    output logic [1:0]  result_src_out,
+    output logic        mem_write_out,
 
-    output logic [31:0] alu_result_out;
-    output logic [31:0] write_data_out;
-    output logic [4:0]  rd_out;
-    output logic [31:0] pc_plus4_out;
+    output logic [31:0] alu_result_out,
+    output logic [31:0] write_data_out,
+    output logic [4:0]  rd_out,
+    output logic [31:0] pc_plus4_out
 );
     logic [31:0]    src_a, src_b;
     logic           zero;
@@ -425,25 +422,25 @@ endmodule
 
 // ----------------- Memory Stage --------------------
 module Memory (
-    input logic [31:0]  alu_result_in;
-    input logic [31:0]  write_data_in;
-    input logic [4:0]   rd_in;
-    input logic [31:0]  pc_plus4_in;
+    input logic [31:0]  alu_result_in,
+    input logic [31:0]  write_data_in,
+    input logic [4:0]   rd_in,
+    input logic [31:0]  pc_plus4_in,
 
-    input logic         reg_write_in;
-    input logic [1:0]   result_src_in;
-    input logic         mem_write_in;
+    input logic         reg_write_in,
+    input logic [1:0]   result_src_in,
+    input logic         mem_write_in,
 
-    input logic         clk;
-    input logic         reset;
+    input logic         clk,
+    input logic         reset,
 
-    output logic [31:0] pc_plus4_out;
-    output logic [4:0]  rd_out;
-    output logic [31:0] read_data_out;
-    output logic [31:0] alu_result_out; 
+    output logic [31:0] pc_plus4_out,
+    output logic [4:0]  rd_out,
+    output logic [31:0] read_data_out,
+    output logic [31:0] alu_result_out, 
 
-    output logic        reg_write_out;
-    output logic [1:0]  result_src_out;
+    output logic        reg_write_out,
+    output logic [1:0]  result_src_out
 );
 
     Memory #(.INIT_FILE("data_mem.txt")) DataMemory (
@@ -470,20 +467,20 @@ endmodule
 
 // ---------------- Writeback Stage ------------------
 module Writeback (
-    input logic [31:0]  alu_result_in;
-    input logic [31:0]  read_data_in;
-    input logic [4:0]   rd_in;
-    input logic [31:0]  pc_plus4_in;
+    input logic [31:0]  alu_result_in,
+    input logic [31:0]  read_data_in,
+    input logic [4:0]   rd_in,
+    input logic [31:0]  pc_plus4_in,
 
-    input logic         reg_write_in;
-    input logic [1:0]   result_src_in;
+    input logic         reg_write_in,
+    input logic [1:0]   result_src_in,
 
-    input logic         clk;
-    input logic         reset;
+    input logic         clk,
+    input logic         reset,
 
-    output logic        reg_write_out;
-    output logic [31:0] result_out;
-    output logic [4:0]  rd_out;
+    output logic        reg_write_out,
+    output logic [31:0] result_out,
+    output logic [4:0]  rd_out
 );
     Mux3To1 Mux (
         .a      (alu_result_in),

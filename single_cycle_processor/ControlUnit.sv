@@ -45,7 +45,7 @@ module ControlUnit (
                 branch      = 1'b0;
             end
             7'b1100011: begin // branch
-                reg_write   = 1'b1;
+                reg_write   = 1'b0;
                 imm_src     = 2'b10;
                 alu_src     = 1'b0;
                 mem_write   = 1'b0;
