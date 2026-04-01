@@ -46,11 +46,10 @@ module TopModule (
         logic [4:0]  rd;
         logic [31:0] alu_result;
         logic [31:0] write_data;
-        // logic zero;
-        // logic [31:0] pc_target;
+        logic [31:0] pc_plus4;
     } e2m_t;
 
-    // M -> W 传递的信号
+    // M -> W
     typedef struct packed {
         // control signal
         logic reg_write;
@@ -83,18 +82,129 @@ module TopModule (
             pipe_m2w <= pipe_m2w_next;
         end
     end
+  
+    // General Definition
+    logic [31:0]    pc_target;
+    logic           pc_src;
+    logic [4:0]     rd;
+    logic [31:0]    result;
+    logic           reg_write;
 
-    
-    /*
-    always_comb begin
-        pipe_f2d_next.instr     = instr_rd;
-        pipe_f2d_next.pc        = pc;
-        pipe_f2d_next.pc_plus4  = pc_plus4;
-    end
-    */
+    // Fetch
+    Fetch Fetch (
+        .pc_target      (pc_target),
+        .pc_src         (pc_src),
 
+        .clk            (clk),
+        .reset          (reset),
 
+        .pc_out         (pipe_f2d_next.pc),
+        .pc_plus4_out   (pipe_f2d_next.pc_plus4),
+        .instr_out      (pipe_f2d_next.instr)
+    );
 
+    // Decode
+    Decode Decode (
+        .instr_in           (pipe_f2d.instr),
+        .pc_in              (pipe_f2d.pc),
+        .pc_plus4_in        (pipe_f2d.pc_plus4),
+
+        .result_in          (result),
+        .reg_write_in       (reg_write),
+        .rd_in              (rd),
+        
+        .clk                (clk),
+        .reset              (reset),
+        
+        .rd1_out            (pipe_d2e_next.rd1),
+        .rd2_out            (pipe_d2e_next.rd2),
+        .pc_out             (pipe_d2e_next.pc),
+        .rd_out             (pipe_d2e_next.rd),
+        .imm_ext_out        (pipe_d2e_next.imm_ext),
+        .pc_plus4_out       (pipe_d2e_next.pc_plus4),
+        
+        .reg_write_out      (pipe_d2e_next.reg_write),
+        .result_src_out     (pipe_d2e_next.result_src),
+        .mem_write_out      (pipe_d2e_next.mem_write),
+        .jump_out           (pipe_d2e_next.jump),
+        .branch_out         (pipe_d2e_next.branch),
+        .alu_control_out    (pipe_d2e_next.alu_control),
+        .alu_src_out        (pipe_d2e_next.alu_src)
+    );
+
+    // Encode
+    Encode Encode (
+        .rd1_in          (pipe_d2e.rd1),
+        .rd2_in          (pipe_d2e.rd2),
+        .pc_in           (pipe_d2e.pc),
+        .rd_in           (pipe_d2e.rd),
+        .imm_ext_in      (pipe_d2e.imm_ext),
+        .pc_plus4_in     (pipe_d2e.pc_plus4),
+
+        .reg_write_in    (pipe_d2e.reg_write),
+        .result_src_in   (pipe_d2e.result_src),
+        .mem_write_in    (pipe_d2e.mem_write),
+        .jump_in         (pipe_d2e.jump),
+        .branch_in       (pipe_d2e.branch),
+        .alu_control_in  (pipe_d2e.alu_control),
+        .alu_src_in      (pipe_d2e.alu_src),
+
+        .clk             (clk),
+        .reset           (reset),
+
+        .pc_src_out      (pc_src),
+        .pc_target_out   (pc_target),
+
+        .reg_write_out   (pipe_e2m_next.reg_write),
+        .result_src_out  (pipe_e2m_next.result_src),
+        .mem_write_out   (pipe_e2m_next.mem_write),
+
+        .alu_result_out  (pipe_e2m_next.alu_result),
+        .write_data_out  (pipe_e2m_next.write_data),
+        .rd_out          (pipe_e2m_next.rd),
+        .pc_plus4_out    (pipe_e2m_next.pc_plus4)
+    );
+
+    // Memory
+    Memory Memory (
+        .alu_result_in   (pipe_e2m.alu_result),
+        .write_data_in   (pipe_e2m.write_data),
+        .rd_in           (pipe_e2m.rd),
+        .pc_plus4_in     (pipe_e2m.pc_plus4),
+
+        .reg_write_in    (pipe_e2m.reg_write),
+        .result_src_in   (pipe_e2m.result_src),
+        .mem_write_in    (pipe_e2m.mem_write),
+
+        .clk             (clk),
+        .reset           (reset),
+
+        .pc_plus4_out    (pipe_m2w_next.pc_plus4),
+        .rd_out          (pipe_m2w_next.rd),
+        .read_data_out   (pipe_m2w_next.read_data),
+        .alu_result_out  (pipe_m2w_next.alu_result),
+
+        .reg_write_out   (pipe_m2w_next.reg_write),
+        .result_src_out  (pipe_m2w_next.result_src)
+    );
+
+    // Writeback
+    Writeback Writeback (
+        .alu_result_in   (pipe_m2w.alu_result),
+        .read_data_in    (pipe_m2w.read_data),
+        .rd_in           (pipe_m2w.rd),
+        .pc_plus4_in     (pipe_m2w.pc_plus4),
+
+        .reg_write_in    (pipe_m2w.reg_write),
+        .result_src_in   (pipe_m2w.result_src),
+
+        .clk             (clk),
+        .reset           (reset),
+
+        .reg_write_out   (reg_write),
+        .result_out      (result),
+        .rd_out          (rd)
+    );
 
 
 
@@ -116,7 +226,7 @@ module Fetch (
 );
     output logic [31:0] pc_next;
     Mux2To1 PCSelect (
-        .a      (pc_plus4),
+        .a      (pc_plus4_out),
         .b      (pc_target),
 
         .sel    (pc_src),
@@ -134,14 +244,14 @@ module Fetch (
     );
 
     Adder32 PCAdder (
-        .a      (pc),
+        .a      (pc_out),
         .b      (32'd4),
         
         .out    (pc_plus4_out)
     );
 
     Memory #(.INIT_FILE("instr_mem.txt")) InstrMemory (
-        .a      (pc),
+        .a      (pc_out),
         .wd     (32'b0),
         .we     (1'b0),
         .clk    (clk),
@@ -157,11 +267,11 @@ endmodule
 module Decode (
     input logic [31:0]  instr_in;
     input logic [31:0]  pc_in;
-    input logic [31:0]  pc_plus_in;
+    input logic [31:0]  pc_plus4_in;
 
+    input logic [31:0]  result_in;
     input logic         reg_write_in;
     input logic [4:0]   rd_in;
-    input logic [31:0]  result_in; 
     
     input logic         clk;
     input logic         reset;
@@ -170,7 +280,7 @@ module Decode (
     output logic [31:0] pc_out;
     output logic [4:0]  rd_out;
     output logic [31:0] imm_ext_out;
-    output logic [31:0] pc_plus_out;
+    output logic [31:0] pc_plus4_out;
 
     output logic        reg_write_out; 
     output logic [1:0]  result_src_out; 
@@ -238,7 +348,7 @@ module ControlUnit (
     );
 
     assign pc_out       = pc_in;
-    assign pc_plus4_out = pc_plus_4_in;
+    assign pc_plus4_out = pc_plus4_in;
 
 endmodule
 
@@ -264,6 +374,10 @@ module Encode (
 
     output logic [31:0] pc_src_out;
     output logic [31:0] pc_target_out;
+
+    output logic        reg_write_out;
+    output logic [1:0]  result_src_out;
+    output logic        mem_write_out;
 
     output logic [31:0] alu_result_out;
     output logic [31:0] write_data_out;
@@ -302,7 +416,7 @@ module Encode (
         reg_write_out   = reg_write_in;
         result_src_out  = result_src_in;
         mem_write_out   = mem_write_in;
-        pc_plus4_in     = pc_plus4_out;
+        pc_plus4_out     = pc_plus4_in;
         rd_out          = rd_in;
     end
 
