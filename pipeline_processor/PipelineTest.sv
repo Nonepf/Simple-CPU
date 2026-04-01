@@ -9,7 +9,7 @@ module PipelineTest();
     initial begin
         clk = 0; reset = 1; #12;
         reset = 0; 
-        #200;
+        #5000;
         $stop;
     end
 endmodule

@@ -166,7 +166,7 @@ module TopModule (
     );
 
     // Memory
-    Memory Memory (
+    MemoryStage MemoryStage (
         .alu_result_in   (pipe_e2m.alu_result),
         .write_data_in   (pipe_e2m.write_data),
         .rd_in           (pipe_e2m.rd),
@@ -307,28 +307,11 @@ module Decode (
     );
 
     Extend Extend (
-        .in         (instr_in[31:7]),
+        .in         (instr_in),
         .sel        (imm_src),
         .out        (imm_ext_out)
     );
 
-    /*
-module ControlUnit (
-    input logic [6:0]   op,
-    input logic [2:0]   funct3,
-    input logic         funct7,
-    input logic         zero,
-
-    output logic        pc_src,     // 0 origin, 1 branch
-    output logic        result_src, // 0 alu, 1 mem
-    output logic        mem_write,
-    output logic [2:0]  alu_control,
-    output logic        alu_src,
-    output logic [1:0]  imm_src,
-    output logic        reg_write
-);*/
-
-    // this module remains to be modified
     ControlUnit ControlUnit(
         .op         (instr_in[6:0]),
         .funct3     (instr_in[14:12]),
@@ -354,22 +337,22 @@ endmodule
 module Encode (
     input logic [31:0]  rd1_in, rd2_in,
     input logic [31:0]  pc_in,
-    input logic [31:0]  rd_in,
+    input logic [4:0]   rd_in,
     input logic [31:0]  imm_ext_in,
     input logic [31:0]  pc_plus4_in,
 
-    output logic        reg_write_in,
-    output logic [1:0]  result_src_in, 
-    output logic        mem_write_in,
-    output logic        jump_in,
-    output logic        branch_in,
-    output logic [2:0]  alu_control_in,
-    output logic        alu_src_in,
+    input logic         reg_write_in,
+    input logic [1:0]   result_src_in, 
+    input logic         mem_write_in,
+    input logic         jump_in,
+    input logic         branch_in,
+    input logic [2:0]   alu_control_in,
+    input logic         alu_src_in,
 
     input logic         clk,
     input logic         reset,
 
-    output logic [31:0] pc_src_out,
+    output logic        pc_src_out,
     output logic [31:0] pc_target_out,
 
     output logic        reg_write_out,
@@ -388,7 +371,7 @@ module Encode (
 
     Adder32 Adder (
         .a      (pc_in),
-        .b      (rd_in),
+        .b      (imm_ext_in),
         .out    (pc_target_out)
     );
 
@@ -421,7 +404,7 @@ endmodule
 
 
 // ----------------- Memory Stage --------------------
-module Memory (
+module MemoryStage (
     input logic [31:0]  alu_result_in,
     input logic [31:0]  write_data_in,
     input logic [4:0]   rd_in,
