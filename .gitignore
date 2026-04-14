@@ -1,3 +1,11 @@
+# --------- Questa --------
+work/
+*.mti
+*.mpf
+*.wlf
+
+# -------------------------
+
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles

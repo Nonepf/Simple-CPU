@@ -329,6 +329,7 @@ module Decode (
 
     assign pc_out       = pc_in;
     assign pc_plus4_out = pc_plus4_in;
+    assign rd_out       = instr_in[11:7];
 
 endmodule
 
@@ -396,8 +397,9 @@ module Encode (
         reg_write_out   = reg_write_in;
         result_src_out  = result_src_in;
         mem_write_out   = mem_write_in;
-        pc_plus4_out     = pc_plus4_in;
+        pc_plus4_out    = pc_plus4_in;
         rd_out          = rd_in;
+        write_data_out  = rd2_in;
     end
 
 endmodule
