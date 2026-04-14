@@ -33,6 +33,10 @@ module TopModule (
         logic [4:0]  rd;
         logic [31:0] rd1;
         logic [31:0] rd2;
+
+        // data hazard with forwarding
+        logic [4:0] rs1;
+        logic [4:0] rs2; 
     } d2e_t;
 
     // E -> M
@@ -90,6 +94,34 @@ module TopModule (
     logic [31:0]    result;
     logic           reg_write;
 
+    // General Definition for Data Hazards with Forwarding
+    logic [31:0]    alu_result_m;
+    logic [4:0]     rd_m;
+    logic [4:0]     rd_w;
+    logic           reg_write_m;
+    logic           reg_write_w;
+    logic [1:0]     forward_ae, forward_be;
+    logic [4:0]     rs1_e, rs2_e;
+
+    assign reg_write_w  = reg_write;
+    assign rd_w         = rd;
+
+    // Hazard Unit
+    HazardUnit Hazard (
+        .rs1_e          (rs1_e),
+        .rs2_e          (rs2_e),
+        .rd_m           (rd_m),
+        .rd_w           (rd_w),
+        .reg_write_m    (reg_write_m),
+        .reg_write_w    (reg_write_w),
+
+        .clk            (clk),
+        .reset          (reset),
+
+        .forward_ae     (forward_ae),
+        .forward_be     (forward_be)
+    );
+
     // Fetch
     Fetch Fetch (
         .pc_target      (pc_target),
@@ -129,7 +161,10 @@ module TopModule (
         .jump_out           (pipe_d2e_next.jump),
         .branch_out         (pipe_d2e_next.branch),
         .alu_control_out    (pipe_d2e_next.alu_control),
-        .alu_src_out        (pipe_d2e_next.alu_src)
+        .alu_src_out        (pipe_d2e_next.alu_src),
+
+        .rs1_out            (pipe_d2e_next.rs1),
+        .rs2_out            (pipe_d2e_next.rs2)
     );
 
     // Encode
@@ -149,6 +184,13 @@ module TopModule (
         .alu_control_in  (pipe_d2e.alu_control),
         .alu_src_in      (pipe_d2e.alu_src),
 
+        .rs1_in          (pipe_d2e.rs1),
+        .rs2_in          (pipe_d2e.rs2),
+        .result_in       (result),
+        .alu_result_in   (alu_result_m),
+        .forward_ae      (forward_ae),
+        .forward_be      (forward_be),
+
         .clk             (clk),
         .reset           (reset),
 
@@ -162,7 +204,10 @@ module TopModule (
         .alu_result_out  (pipe_e2m_next.alu_result),
         .write_data_out  (pipe_e2m_next.write_data),
         .rd_out          (pipe_e2m_next.rd),
-        .pc_plus4_out    (pipe_e2m_next.pc_plus4)
+        .pc_plus4_out    (pipe_e2m_next.pc_plus4),
+
+        .rs1_out         (rs1_e),
+        .rs2_out         (rs2_e)
     );
 
     // Memory
@@ -185,7 +230,11 @@ module TopModule (
         .alu_result_out  (pipe_m2w_next.alu_result),
 
         .reg_write_out   (pipe_m2w_next.reg_write),
-        .result_src_out  (pipe_m2w_next.result_src)
+        .result_src_out  (pipe_m2w_next.result_src),
+        
+        .reg_write_m     (reg_write_m), // the same as reg_write_out
+        .rd_m            (rd_m),
+        .alu_result_m    (alu_result_m)
     );
 
     // Writeback
@@ -207,279 +256,5 @@ module TopModule (
     );
 
 
-
-endmodule
-
-
-// ------------------ Fetch Stage --------------------
-module Fetch (
-    input logic [31:0]  pc_target,
-
-    input logic         pc_src,
-
-    input logic         clk,
-    input logic         reset,
-
-    output logic [31:0] pc_out,
-    output logic [31:0] pc_plus4_out,
-    output logic [31:0] instr_out
-);
-    logic [31:0] pc_next;
-    Mux2To1 PCSelect (
-        .a      (pc_plus4_out),
-        .b      (pc_target),
-
-        .sel    (pc_src),
-
-        .out    (pc_next)
-    );
-
-    Register PC (
-        .in     (pc_next),
-        
-        .clk    (clk),
-        .reset  (reset),
-
-        .out    (pc_out)
-    );
-
-    Adder32 PCAdder (
-        .a      (pc_out),
-        .b      (32'd4),
-        
-        .out    (pc_plus4_out)
-    );
-
-    Memory #(.INIT_FILE("instr_mem.txt")) InstrMemory (
-        .a      (pc_out),
-        .wd     (32'b0),
-        .we     (1'b0),
-        .clk    (clk),
-        .reset  (1'b0),
-
-        .rd     (instr_out)
-    );
-
-endmodule
-
-
-// ----------------- Decode Stage --------------------
-module Decode (
-    input logic [31:0]  instr_in,
-    input logic [31:0]  pc_in,
-    input logic [31:0]  pc_plus4_in,
-
-    input logic [31:0]  result_in,
-    input logic         reg_write_in,
-    input logic [4:0]   rd_in,
-    
-    input logic         clk,
-    input logic         reset,
-
-    output logic [31:0] rd1_out, rd2_out,
-    output logic [31:0] pc_out,
-    output logic [4:0]  rd_out,
-    output logic [31:0] imm_ext_out,
-    output logic [31:0] pc_plus4_out,
-
-    output logic        reg_write_out,
-    output logic [1:0]  result_src_out, 
-    output logic        mem_write_out,
-    output logic        jump_out,
-    output logic        branch_out,
-    output logic [2:0]  alu_control_out,
-    output logic        alu_src_out
-);
-    logic [1:0] imm_src;
-
-    RegisterFile RegisterFile (
-        .a1         (instr_in[19:15]),
-        .a2         (instr_in[24:20]),
-        .a3         (rd_in),
-        .wd3        (result_in),
-
-        .clk        (clk),
-        .reset      (reset),
-        .we3        (reg_write_in),
-
-        .rd1        (rd1_out),
-        .rd2        (rd2_out)
-    );
-
-    Extend Extend (
-        .in         (instr_in),
-        .sel        (imm_src),
-        .out        (imm_ext_out)
-    );
-
-    ControlUnit ControlUnit(
-        .op         (instr_in[6:0]),
-        .funct3     (instr_in[14:12]),
-        .funct7     (instr_in[30]),
-
-        .reg_write  (reg_write_out),
-        .result_src (result_src_out),
-        .mem_write  (mem_write_out),
-        .jump       (jump_out), // we need to implement it later
-        .branch     (branch_out), // we need to implement it later
-        .alu_control(alu_control_out),
-        .alu_src    (alu_src_out),
-        .imm_src    (imm_src)
-    );
-
-    assign pc_out       = pc_in;
-    assign pc_plus4_out = pc_plus4_in;
-    assign rd_out       = instr_in[11:7];
-
-endmodule
-
-
-// ----------------- Execute Stage -------------------
-module Encode (
-    input logic [31:0]  rd1_in, rd2_in,
-    input logic [31:0]  pc_in,
-    input logic [4:0]   rd_in,
-    input logic [31:0]  imm_ext_in,
-    input logic [31:0]  pc_plus4_in,
-
-    input logic         reg_write_in,
-    input logic [1:0]   result_src_in, 
-    input logic         mem_write_in,
-    input logic         jump_in,
-    input logic         branch_in,
-    input logic [2:0]   alu_control_in,
-    input logic         alu_src_in,
-
-    input logic         clk,
-    input logic         reset,
-
-    output logic        pc_src_out,
-    output logic [31:0] pc_target_out,
-
-    output logic        reg_write_out,
-    output logic [1:0]  result_src_out,
-    output logic        mem_write_out,
-
-    output logic [31:0] alu_result_out,
-    output logic [31:0] write_data_out,
-    output logic [4:0]  rd_out,
-    output logic [31:0] pc_plus4_out
-);
-    logic [31:0]    src_a, src_b;
-    logic           zero;
-
-    assign src_a    = rd1_in;
-
-    Adder32 Adder (
-        .a      (pc_in),
-        .b      (imm_ext_in),
-        .out    (pc_target_out)
-    );
-
-    Mux2To1 Mux (
-        .a      (rd2_in),
-        .b      (imm_ext_in),
-        .sel    (alu_src_in),
-        .out    (src_b)
-    );
-
-    ALU ALU (
-        .a      (src_a),
-        .b      (src_b),
-        .ctr    (alu_control_in),
-        .zero   (zero),
-        .out    (alu_result_out)
-    );
-
-    assign pc_src_out = (zero & branch_in) | jump_in;
-
-    always_comb begin
-        reg_write_out   = reg_write_in;
-        result_src_out  = result_src_in;
-        mem_write_out   = mem_write_in;
-        pc_plus4_out    = pc_plus4_in;
-        rd_out          = rd_in;
-        write_data_out  = rd2_in;
-    end
-
-endmodule
-
-
-// ----------------- Memory Stage --------------------
-module MemoryStage (
-    input logic [31:0]  alu_result_in,
-    input logic [31:0]  write_data_in,
-    input logic [4:0]   rd_in,
-    input logic [31:0]  pc_plus4_in,
-
-    input logic         reg_write_in,
-    input logic [1:0]   result_src_in,
-    input logic         mem_write_in,
-
-    input logic         clk,
-    input logic         reset,
-
-    output logic [31:0] pc_plus4_out,
-    output logic [4:0]  rd_out,
-    output logic [31:0] read_data_out,
-    output logic [31:0] alu_result_out, 
-
-    output logic        reg_write_out,
-    output logic [1:0]  result_src_out
-);
-
-    Memory #(.INIT_FILE("data_mem.txt")) DataMemory (
-        .a      (alu_result_in),
-        .wd     (write_data_in),
-        
-        .we     (mem_write_in),
-        .clk    (clk),
-        .reset  (1'b0),
-
-        .rd     (read_data_out)
-    );
-
-    always_comb begin
-        reg_write_out   = reg_write_in;
-        result_src_out  = result_src_in;
-        alu_result_out  = alu_result_in;
-        rd_out          = rd_in;
-        pc_plus4_out    = pc_plus4_in;
-    end
-
-endmodule
-
-
-// ---------------- Writeback Stage ------------------
-module Writeback (
-    input logic [31:0]  alu_result_in,
-    input logic [31:0]  read_data_in,
-    input logic [4:0]   rd_in,
-    input logic [31:0]  pc_plus4_in,
-
-    input logic         reg_write_in,
-    input logic [1:0]   result_src_in,
-
-    input logic         clk,
-    input logic         reset,
-
-    output logic        reg_write_out,
-    output logic [31:0] result_out,
-    output logic [4:0]  rd_out
-);
-    Mux3To1 Mux (
-        .a      (alu_result_in),
-        .b      (read_data_in),
-        .c      (pc_plus4_in),
-
-        .sel    (result_src_in),
-
-        .out    (result_out)
-    );
-
-    always_comb begin
-        rd_out          = rd_in;
-        reg_write_out   = reg_write_in;
-    end
 
 endmodule
