@@ -41,6 +41,7 @@ module Encode (
     output logic [4:0]  rs2_out,
 
     output logic        result_src_out0,
+    output logic        rd_out_2
 );
     logic [31:0]    src_a, src_b, mid_b;
     logic           zero;
@@ -96,6 +97,7 @@ module Encode (
         rs2_out         = rs2_in;
 
         result_src_out0 = result_src_in[0];
+        rd_out_2        = rd_in;
     end
 
 endmodule

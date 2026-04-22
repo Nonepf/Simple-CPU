@@ -88,7 +88,8 @@ module TopModule (
     logic [1:0]     forward_ae, forward_be;
     logic [4:0]     rs1_e, rs2_e;
 
-    logic           stall_f, stall_d, flush_e;
+    logic           stall_f, stall_d;
+    logic           flush_e, flush_d;
     logic [4:0]     rs1_d, rs2_d;
     logic [4:0]     rd_e;
     logic           result_src_e0;
@@ -110,6 +111,8 @@ module TopModule (
         .rd_e           (rd_e),
         .result_src_e0  (result_src_e0),
 
+        .pc_src_e       (pc_src),
+
         .clk            (clk),
         .reset          (reset),
 
@@ -118,7 +121,8 @@ module TopModule (
 
         .stall_f        (stall_f),
         .stall_d        (stall_d),
-        .flush_e        (flush_e)
+        .flush_e        (flush_e),
+        .flush_d        (flush_d)
     );
 
     // Fetch
@@ -213,7 +217,9 @@ module TopModule (
         .rs1_out         (rs1_e),
         .rs2_out         (rs2_e),
 
-        .result_src_out0 (result_src_e0)
+        .result_src_out0 (result_src_e0),
+
+        .rd_out_2        (rd_e)
     );
 
     // Memory
@@ -261,7 +267,6 @@ module TopModule (
         .rd_out          (rd)
     );
     
-    // initialize
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
             pipe_f2d <= '0;
@@ -269,16 +274,18 @@ module TopModule (
             pipe_e2m <= '0;
             pipe_m2w <= '0;
         end else begin
-            if (stall_d) begin
-                pipe_f2d <= pipe_f2d_next;
-            end else begin
+            if (flush_d) begin
+                pipe_f2d <= '0;
+            end else if (stall_d) begin
                 pipe_f2d <= pipe_f2d;
+            end else begin
+                pipe_f2d <= pipe_f2d_next;
             end
 
             if (flush_e) begin
-                pipe_d2e <= pipe_d2e_next;
-            end else begin
                 pipe_d2e <= '0;
+            end else begin
+                pipe_d2e <= pipe_d2e_next;
             end
             
             pipe_e2m <= pipe_e2m_next;

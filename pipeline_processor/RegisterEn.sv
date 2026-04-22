@@ -8,7 +8,7 @@ module RegisterEn (
     logic [31:0] register;
     always_ff @(posedge clk) begin
         if (reset) begin
-            register <= 1'b0;
+            register <= '0;
         end else if (en) begin
             register <= in;
         end else begin

@@ -12,7 +12,11 @@ module Fetch (
     output logic [31:0] pc_plus4_out,
     output logic [31:0] instr_out
 );
-    logic [31:0] pc_next;
+    logic [31:0]    pc_next;
+    logic           en;
+    
+    assign en = ~stall_f;
+
     Mux2To1 PCSelect (
         .a      (pc_plus4_out),
         .b      (pc_target),
@@ -27,7 +31,7 @@ module Fetch (
         
         .clk    (clk),
         .reset  (reset),
-        .en     (stall_f),
+        .en     (en),
 
         .out    (pc_out)
     );

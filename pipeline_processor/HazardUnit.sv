@@ -6,6 +6,7 @@ module HazardUnit (
     input logic [4:0]   rs1_d, rs2_d,
     input logic [4:0]   rd_e,
     input logic         result_src_e0,
+    input logic         pc_src_e,
 
     input logic         clk,
     input logic         reset,
@@ -13,7 +14,7 @@ module HazardUnit (
     output logic [1:0]  forward_ae,
     output logic [1:0]  forward_be,
 
-    output logic        stall_f, stall_d, flush_e
+    output logic        stall_f, stall_d, flush_e, flush_d
 );
 
     logic lw_stall;
@@ -43,7 +44,8 @@ module HazardUnit (
     always_comb begin
         stall_f = lw_stall;
         stall_d = lw_stall;
-        flush_e = lw_stall;
+        flush_e = lw_stall || pc_src_e;
+        flush_d = pc_src_e;
     end
 
 endmodule
