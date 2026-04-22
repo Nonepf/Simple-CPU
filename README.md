@@ -21,4 +21,6 @@ My CPU implementation while learning DDCA.
 
 - [x] 单周期 CPU
 - [x] 多周期 CPU
-- [ ] 流水线 CPU
+- [-] 流水线 CPU
+
+流水线 CPU 的主要设计已经完成，但还是没有跑出来，存在 bug.
