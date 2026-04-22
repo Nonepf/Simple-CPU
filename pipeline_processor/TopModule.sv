@@ -71,21 +71,6 @@ module TopModule (
     d2e_t pipe_d2e, pipe_d2e_next;
     e2m_t pipe_e2m, pipe_e2m_next;
     m2w_t pipe_m2w, pipe_m2w_next;
-
-    // initialize
-    always_ff @(posedge clk or posedge reset) begin
-        if (reset) begin
-            pipe_f2d <= '0;
-            pipe_d2e <= '0;
-            pipe_e2m <= '0;
-            pipe_m2w <= '0;
-        end else begin
-            pipe_f2d <= pipe_f2d_next;
-            pipe_d2e <= pipe_d2e_next;
-            pipe_e2m <= pipe_e2m_next;
-            pipe_m2w <= pipe_m2w_next;
-        end
-    end
   
     // General Definition
     logic [31:0]    pc_target;
@@ -103,6 +88,11 @@ module TopModule (
     logic [1:0]     forward_ae, forward_be;
     logic [4:0]     rs1_e, rs2_e;
 
+    logic           stall_f, stall_d, flush_e;
+    logic [4:0]     rs1_d, rs2_d;
+    logic [4:0]     rd_e;
+    logic           result_src_e0;
+
     assign reg_write_w  = reg_write;
     assign rd_w         = rd;
 
@@ -115,17 +105,28 @@ module TopModule (
         .reg_write_m    (reg_write_m),
         .reg_write_w    (reg_write_w),
 
+        .rs1_d          (rs1_d),
+        .rs2_d          (rs2_d),
+        .rd_e           (rd_e),
+        .result_src_e0  (result_src_e0),
+
         .clk            (clk),
         .reset          (reset),
 
         .forward_ae     (forward_ae),
-        .forward_be     (forward_be)
+        .forward_be     (forward_be),
+
+        .stall_f        (stall_f),
+        .stall_d        (stall_d),
+        .flush_e        (flush_e)
     );
 
     // Fetch
     Fetch Fetch (
         .pc_target      (pc_target),
         .pc_src         (pc_src),
+
+        .stall_f        (stall_f),
 
         .clk            (clk),
         .reset          (reset),
@@ -164,7 +165,10 @@ module TopModule (
         .alu_src_out        (pipe_d2e_next.alu_src),
 
         .rs1_out            (pipe_d2e_next.rs1),
-        .rs2_out            (pipe_d2e_next.rs2)
+        .rs2_out            (pipe_d2e_next.rs2),
+
+        .rs1_out_2          (rs1_d),
+        .rs2_out_2          (rs2_d)
     );
 
     // Encode
@@ -207,7 +211,9 @@ module TopModule (
         .pc_plus4_out    (pipe_e2m_next.pc_plus4),
 
         .rs1_out         (rs1_e),
-        .rs2_out         (rs2_e)
+        .rs2_out         (rs2_e),
+
+        .result_src_out0 (result_src_e0)
     );
 
     // Memory
@@ -254,6 +260,31 @@ module TopModule (
         .result_out      (result),
         .rd_out          (rd)
     );
+    
+    // initialize
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            pipe_f2d <= '0;
+            pipe_d2e <= '0;
+            pipe_e2m <= '0;
+            pipe_m2w <= '0;
+        end else begin
+            if (stall_d) begin
+                pipe_f2d <= pipe_f2d_next;
+            end else begin
+                pipe_f2d <= pipe_f2d;
+            end
+
+            if (flush_e) begin
+                pipe_d2e <= pipe_d2e_next;
+            end else begin
+                pipe_d2e <= '0;
+            end
+            
+            pipe_e2m <= pipe_e2m_next;
+            pipe_m2w <= pipe_m2w_next;
+        end
+    end
 
 
 

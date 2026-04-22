@@ -6,6 +6,7 @@ module Fetch (
 
     input logic         clk,
     input logic         reset,
+    input logic         stall_f,
 
     output logic [31:0] pc_out,
     output logic [31:0] pc_plus4_out,
@@ -21,11 +22,12 @@ module Fetch (
         .out    (pc_next)
     );
 
-    Register PC (
+    RegisterEn PC (
         .in     (pc_next),
         
         .clk    (clk),
         .reset  (reset),
+        .en     (stall_f),
 
         .out    (pc_out)
     );

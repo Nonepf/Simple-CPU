@@ -38,7 +38,9 @@ module Encode (
     output logic [31:0] pc_plus4_out,
 
     output logic [4:0]  rs1_out,
-    output logic [4:0]  rs2_out
+    output logic [4:0]  rs2_out,
+
+    output logic        result_src_out0,
 );
     logic [31:0]    src_a, src_b, mid_b;
     logic           zero;
@@ -92,6 +94,8 @@ module Encode (
 
         rs1_out         = rs1_in;
         rs2_out         = rs2_in;
+
+        result_src_out0 = result_src_in[0];
     end
 
 endmodule

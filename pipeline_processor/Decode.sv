@@ -26,7 +26,10 @@ module Decode (
     output logic        alu_src_out,
 
     output logic [4:0]  rs1_out,
-    output logic [4:0]  rs2_out
+    output logic [4:0]  rs2_out,
+
+    output logic [4:0]  rs1_out_2,
+    output logic [4:0]  rs2_out_2
 );
     logic [1:0] imm_src;
 
@@ -72,6 +75,9 @@ module Decode (
 
         rs1_out      = instr_in[19:15];
         rs2_out      = instr_in[24:20];
+
+        rs1_out_1    = instr_in[19:15];
+        rs1_out_2    = instr_in[24:20];
     end
 
 endmodule
